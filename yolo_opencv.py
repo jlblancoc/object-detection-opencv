@@ -11,7 +11,7 @@ import numpy as np
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True,
-                help='path to input image')
+                help='path to input video')
 ap.add_argument('-c', '--config', required=True,
                 help='path to yolo config file')
 ap.add_argument('-w', '--weights', required=True,
@@ -27,6 +27,24 @@ with open(args.classes, 'r') as f:
 COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
 net = cv2.dnn.readNet(args.weights, args.config)
+
+# Create a VideoCapture object and read from input file
+# If the input is the camera, pass 0 instead of the video file name
+cap = cv2.VideoCapture(args.image)
+
+# Check if camera opened successfully
+if (cap.isOpened() == False):
+    print("Error opening video stream or file")
+
+
+# set video parameters
+frame_width = 1280
+frame_height = 720
+fps = 25
+
+# create video writer object
+videoOut = cv2.VideoWriter('detected.mp4', cv2.VideoWriter_fourcc(
+    *'MP4V'), fps, (frame_width, frame_height))
 
 
 def get_output_layers(net):
@@ -106,10 +124,28 @@ def process_image(image):
             x), round(y), round(x+w), round(y+h))
 
     cv2.imshow("object detection", image)
-    cv2.waitKey()
+    videoOut.write(image)
+    # cv2.waitKey()
 
 
-image = cv2.imread(args.image)
-process_image(image)
+# Read until video is completed
+while(cap.isOpened()):
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+    if ret == True:
+        # Process the frame here
+        # ...
+        # Display the resulting frame
+        process_image(frame)
+        # Press Q on keyboard to  exit
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+    # Break the loop
+    else:
+        break
+
+# When everything done, release the video capture object
+cap.release()
+videoOut.release()
 
 cv2.destroyAllWindows()
